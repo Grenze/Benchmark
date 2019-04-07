@@ -18,6 +18,7 @@ namespace ycsbc {
     class LevelDB : public DB{
     public:
         LevelDB(const char *dbfilename);
+
         int Read(const std::string &table, const std::string &key,
                  const std::vector<std::string> *fields,
                  std::vector<KVPair> &result);
