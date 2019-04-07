@@ -11,12 +11,12 @@ using namespace std;
 namespace ycsbc {
     SoftDB::SoftDB(const char *dbfilename) :noResult(0){
         //get softdb config
-        ConfigLevelDB config = ConfigLevelDB();
-        int bloomBits = config.getBloomBits();
+        //ConfigLevelDB config = ConfigLevelDB();
+        //int bloomBits = config.getBloomBits();
         //size_t blockCache = config.getBlockCache();
-        bool seekCompaction = config.getSeekCompaction();
+        //bool seekCompaction = config.getSeekCompaction();
         //bool compression = config.getCompression();
-        bool directIO = config.getDirectIO();
+        //bool directIO = config.getDirectIO();
         //set options
         softdb::Options options;
         options.create_if_missing = true;
@@ -33,7 +33,7 @@ namespace ycsbc {
             cerr<<"Can't open softdb "<<dbfilename<<endl;
             exit(0);
         }
-        cout<<"\nbloom bits:"<<bloomBits<<"bits\ndirectIO:"<<(bool)directIO<<"\nseekCompaction:"<<(bool)seekCompaction<<endl;
+        //cout<<"\nbloom bits:"<<bloomBits<<"bits\ndirectIO:"<<(bool)directIO<<"\nseekCompaction:"<<(bool)seekCompaction<<endl;
     }
 
     int SoftDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,

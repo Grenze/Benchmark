@@ -52,6 +52,8 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
 }
 
 int main(const int argc, const char *argv[]) {
+
+/*
   utils::Properties props;
   string file_name = ParseCommandLine(argc, argv, props);
 
@@ -123,6 +125,113 @@ int main(const int argc, const char *argv[]) {
     db->printStats();
     delete db;
   }
+*/
+
+
+    utils::Properties props;
+    string file_name = ParseCommandLine(argc, argv, props);
+
+    ycsbc::DB *db = ycsbc::DBFactory::CreateDB(props);
+    if (!db) {
+        cout << "Unknown database name " << props["dbname"] << endl;
+        exit(0);
+    }
+
+    {
+        ycsbc::CoreWorkload wl;
+        wl.Init(props);
+        vector<future<int>> actual_ops;
+        int total_ops;
+        utils::Timer timer;
+        //bool skipLoad = utils::StrToBool(props["skipLoad"]);
+
+        const int num_threads = stoi(props.GetProperty("threadcount", "1"));
+
+        cout<<"Loads data Phase"<<endl;
+        // Loads data
+        total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
+        timer.Start();
+        for (int i = 0; i < num_threads; ++i) {
+            actual_ops.emplace_back(async(launch::async,
+                                          DelegateClient, db, &wl, total_ops / num_threads, true));
+        }
+        assert((int) actual_ops.size() == num_threads);
+
+        int sum = 0;
+        for (auto &n : actual_ops) {
+            assert(n.valid());
+            sum += n.get();
+        }
+        cout << "# Loading records:\t" << sum << endl;
+        cout << "Load time: "<<timer.End()/1000000<<"s"<<endl;
+        actual_ops.clear();
+        //cerr<< "done, sleep 10 minutes for compaction"<<endl;
+        //sleep(600);
+
+
+        cout << "Read ops： " << ops_cnt[ycsbc::READ] << "\nTotal read time: " << ops_time[ycsbc::READ]/1000000 << "s" <<endl;
+        cout << "Time per read: " << ops_time[ycsbc::READ]/ops_cnt[ycsbc::READ]/1000 << "ms" <<endl;
+        cout << "Insert ops: " << ops_cnt[ycsbc::INSERT] << "\nTotal insert time: " << ops_time[ycsbc::INSERT]/1000000 << "s" <<endl;
+        cout << "Time per insert: " << ops_time[ycsbc::INSERT]/ops_cnt[ycsbc::INSERT]/1000 << "ms" <<endl;
+        cout << "Scan ops: " << ops_cnt[ycsbc::SCAN] << "\nTotal scan time: "<< ops_time[ycsbc::SCAN]/1000000 << "s" <<endl;
+        cout << "Time per scan: " << ops_time[ycsbc::SCAN]/ops_cnt[ycsbc::SCAN]/1000 << "ms" <<endl;
+        if (props["dbname"] == "leveldb"||props["dbname"] == "vlog"||props["dbname"]=="expdb"||props["dbname"]=="rocksdb"){
+            cout << "============================leveldb statistics==========================="<<endl;
+            db->printStats();
+            //delete db;
+        }
+
+    }
+
+    cout<<endl<<endl;
+
+    {
+        ycsbc::CoreWorkload wl;
+        wl.Init(props);
+        vector<future<int>> actual_ops;
+        int total_ops;
+        utils::Timer timer;
+        //bool skipLoad = utils::StrToBool(props["skipLoad"]);
+
+        const int num_threads = stoi(props.GetProperty("threadcount", "1"));
+
+        cout<<"Performs transactions Phase"<<endl;
+        // Performs transactions
+        total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
+        timer.Start();
+        for (int i = 0; i < num_threads; ++i) {
+            actual_ops.emplace_back(async(launch::async,
+                                          DelegateClient, db, &wl, total_ops / num_threads, false));
+        }
+        assert((int) actual_ops.size() == num_threads);
+
+        int sum = 0;
+        for (auto &n : actual_ops) {
+            assert(n.valid());
+            sum += n.get();
+        }
+        double duration = timer.End();
+        cout << "# Transaction throughput (KTPS)" << endl;
+        cout << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
+        cout << total_ops / (duration / 1000000) / 1000 << endl;
+        cout << "run time: " << duration << "us\n\n" << endl;
+
+
+        cout << "Read ops： " << ops_cnt[ycsbc::READ] << "\nTotal read time: " << ops_time[ycsbc::READ]/1000000 << "s" <<endl;
+        cout << "Time per read: " << ops_time[ycsbc::READ]/ops_cnt[ycsbc::READ]/1000 << "ms" <<endl;
+        cout << "Insert ops: " << ops_cnt[ycsbc::INSERT] << "\nTotal insert time: " << ops_time[ycsbc::INSERT]/1000000 << "s" <<endl;
+        cout << "Time per insert: " << ops_time[ycsbc::INSERT]/ops_cnt[ycsbc::INSERT]/1000 << "ms" <<endl;
+        cout << "Scan ops: " << ops_cnt[ycsbc::SCAN] << "\nTotal scan time: "<< ops_time[ycsbc::SCAN]/1000000 << "s" <<endl;
+        cout << "Time per scan: " << ops_time[ycsbc::SCAN]/ops_cnt[ycsbc::SCAN]/1000 << "ms" <<endl;
+        if (props["dbname"] == "leveldb"||props["dbname"] == "vlog"||props["dbname"]=="expdb"||props["dbname"]=="rocksdb"){
+            cout << "============================leveldb statistics==========================="<<endl;
+            db->printStats();
+            delete db;
+        }
+
+    }
+
+
 }
 
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
