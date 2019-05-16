@@ -21,6 +21,8 @@ namespace ycsbc {
         //set options
         leveldb::Options options;
         options.write_buffer_size = 67108864;
+        options.max_file_size = 33554432;
+        options.block_cache = leveldb::NewLRUCache(134217728);
         options.create_if_missing = true;
         //if(!compression)
         //    options.compression = leveldb::kNoCompression;
