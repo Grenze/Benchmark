@@ -19,6 +19,7 @@ namespace ycsbc {
         //bool directIO = config.getDirectIO();
         //set options
         softdb::Options options;
+        options.write_buffer_size = 67108864;
         options.create_if_missing = true;
         //if(!compression)
         //    options.compression = softdb::kNoCompression;
